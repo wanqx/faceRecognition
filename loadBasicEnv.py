@@ -3,12 +3,12 @@ import os
 # processed img shape
 IMGSHAPE = 128
 
-NET_SAVE_NAME = "vgg16"
+NET_SAVE_NAME = "vgg"
 
 WORKDIR = "photo"
 SAMPLE_DIR = f"./{WORKDIR}"
 OUTPUT_DIR = f"./{WORKDIR}/processed"
-OUTPUT_NUM = 2000
+OUTPUT_NUM = 4000
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 

@@ -13,16 +13,48 @@ from loadBasicEnv import IMGSHAPE, OUTPUT_NUM, OUTPUT_DIR, SAMPLE_DIR
 filenames = [x for x in os.listdir(SAMPLE_DIR) if x.endswith('jpg')]
 LENGTH = len(filenames)
 
+class DownSampleImg:
+    ITERMAXDEPTH = 3
+    OUTPUTSIZE = (IMGSHAPE, IMGSHAPE)
+
+    def __init__(self, img):
+        img = cv2.resize(img, (1024, 1024))
+        self.reshapeSize = 128
+        self.img = img
+        self.img_backup = img.copy()
+        self.size = img.shape
+
+    def randomInt(self):
+        return random.randint(0, 1024//self.reshapeSize-1)
+
+    #  def getFieldIndex(self):
+    #      tmp = []
+    #      for i in range(256):
+    #          for j in range(256):
+    #              tmp.append((self.randomInt()+4*i, self.randomInt()+4*j))
+    #      return tmp
+
+    def getRandomDownSample(self):
+        blank = np.zeros((self.reshapeSize, self.reshapeSize), self.img.dtype)
+        for i in range(self.reshapeSize):
+            for j in range(self.reshapeSize):
+                blank.itemset((i,j), self.img_backup.item(self.randomInt()+8*i, self.randomInt()+8*j))
+        return blank
+
 
 class TransImg:
     ITERMAXDEPTH = 4
     OUTPUTSIZE = (IMGSHAPE, IMGSHAPE)
 
     def __init__(self, img):
-        img = transFace(img)
-        self.img = img
+        self.downSample = DownSampleImg(img)
+        img = self.downSample.getRandomDownSample()
+        self.img = transFace(img) 
         self.img_backup = img.copy()
         self.size = img.shape
+
+    def reinitiate(self):
+        self.img = transFace(self.downSample.getRandomDownSample())
 
     def Contrast_and_Brightness(self, img, alpha, beta):
         blank = np.zeros(img.shape, img.dtype)
@@ -32,7 +64,7 @@ class TransImg:
     def flip(self, img, dirction):
         return cv2.flip(img, dirction)
 
-    def trans_getRandomRangeXY(self, img):
+    def getRandomRangeXY(self, img):
         H, W = img.shape
         random_rangeH = 0.1 * H
         random_rangeW = 0.1 * W
@@ -93,7 +125,7 @@ class TransImg:
                 NoiseImg[randX,randY]=255
         return NoiseImg
 
-    def trans_GaussNoise(self, image, mean=0, var=0.0002):
+    def GaussNoise(self, image, mean=0, var=0.0002):
         image = np.array(image/255, dtype=float)
         noise = np.random.normal(mean, var ** 0.5, image.shape)
         out = image + noise
@@ -137,7 +169,7 @@ class TransImg:
             s = f"self.{func}(img)"
             #  print(s)
             img = eval(s)
-        self.clean()
+        self.reinitiate()
         #  return cv2.resize(img, self.size[::-1])
         return cv2.resize(img, self.OUTPUTSIZE)
 
@@ -147,9 +179,6 @@ class TransImg:
     def imgSeries(self, N=1):
         for i in range(N):
             yield self.getProcessedImg()
-
-    def clean(self):
-        self.img = self.img_backup.copy()
 
 
 def getReady(imgName):
